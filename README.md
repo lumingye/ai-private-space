@@ -74,6 +74,9 @@ ai-private-space/
 ├─ README.md
 ├─ SECURITY.md
 ├─ CHANGELOG.md
+├─ LICENSE.md
+├─ NOTICE.md
+├─ RESPONSIBLE_USE.md
 ├─ requirements.txt
 ├─ docs/
 │  ├─ compact-guide-v0.5.1.md
@@ -101,6 +104,17 @@ ai-private-space/
 - 管理员和模型供应商的信任边界；
 - 删除、恢复和跨设备迁移是否经过验证。
 
+## 项目起源
+
+本项目最初受到网络社区中“可以给 AI 一个自己的私密空间”这一公开想法的启发。该想法未提供代码或具体实现；本项目的边界设计、架构、文档、参考代码与测试均为后续独立完成。抽象想法不属于本项目主张独占的范围，详见 [`NOTICE.md`](NOTICE.md)。
+
 ## 许可
 
-仓库暂未指定开源许可证。正式公开前，请由维护者决定文档与代码的授权方式；在许可证加入前，不应默认视为可自由复制、修改或再分发。
+本仓库允许非商业转载、改编和再分发，但文档与代码采用不同的标准许可：
+
+- **文档与文字材料：** [CC BY-NC-SA 4.0](https://creativecommons.org/licenses/by-nc-sa/4.0/)。须注明来源、标注改动，并以相同许可发布衍生材料；禁止商用。
+- **参考代码与测试：** [PolyForm Noncommercial License 1.0.0](https://polyformproject.org/licenses/noncommercial/1.0.0/)。允许非商业使用、修改与分发，须保留许可证与 Required Notice；商业使用需另行获得书面许可。
+
+完整适用范围见 [`LICENSE.md`](LICENSE.md)。安全与伦理立场见 [`RESPONSIBLE_USE.md`](RESPONSIBLE_USE.md)。
+
+许可证约束本仓库中的具体文字、代码、图示、案例与原创组织结构，不约束他人对“给 AI 一个私人空间”这一抽象想法进行独立实现。独立实现无需依法署名，礼貌注明灵感来源则非常欢迎。
