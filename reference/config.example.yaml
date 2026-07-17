@@ -1,8 +1,12 @@
+# This file documents settings; the minimal reference does not load YAML.
+# Do not change only privacy_mode. gateway_isolated also requires both client
+# exposure flags below to be false and startup validation to succeed.
 private_space:
   enabled: true
   privacy_mode: soft_privacy  # soft_privacy | gateway_isolated
   expose_private_tools_to_client: true
   stream_private_tool_events: true
+  fail_closed_unknown_tool_events: true
   log_private_arguments: false
   log_private_results: false
   allow_sensitive_content: false
@@ -13,9 +17,14 @@ private_space:
   include_in_summary: false
 
 identity:
+  # Resolve these from an authenticated server-side subject. Never trust values
+  # copied directly from a client request or model-generated tool arguments.
+  source: server_authenticated
   user_id: example-user
   persona_id: example-persona
 
 storage:
+  # On POSIX, the containing directory must be owner-only (0700).
   database_path: ./private-data/private.sqlite
   master_key_env: PRIVATE_SPACE_MASTER_KEY
+
