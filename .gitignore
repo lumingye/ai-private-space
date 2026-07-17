@@ -1,0 +1,13 @@
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.venv/
+.env
+*.sqlite
+*.sqlite3
+*.db
+*.key
+*.pem
+private-data/
+backups/
+.DS_Store

@@ -1,0 +1,21 @@
+private_space:
+  enabled: true
+  privacy_mode: soft_privacy  # soft_privacy | gateway_isolated
+  expose_private_tools_to_client: true
+  stream_private_tool_events: true
+  log_private_arguments: false
+  log_private_results: false
+  allow_sensitive_content: false
+  auto_recall: false
+  include_in_embedding: false
+  include_in_fts: false
+  include_in_profile: false
+  include_in_summary: false
+
+identity:
+  user_id: example-user
+  persona_id: example-persona
+
+storage:
+  database_path: ./private-data/private.sqlite
+  master_key_env: PRIVATE_SPACE_MASTER_KEY

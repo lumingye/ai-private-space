@@ -1,0 +1,66 @@
+[
+  {
+    "path": ".gitignore",
+    "bytes": 119
+  },
+  {
+    "path": "CHANGELOG.md",
+    "bytes": 902
+  },
+  {
+    "path": "README.md",
+    "bytes": 4025
+  },
+  {
+    "path": "SECURITY.md",
+    "bytes": 1668
+  },
+  {
+    "path": "docs/compact-guide-v0.5.1.md",
+    "bytes": 19389
+  },
+  {
+    "path": "docs/full-proposal-v0.3.md",
+    "bytes": 43710
+  },
+  {
+    "path": "docs/tool-trace-patch-v0.4.md",
+    "bytes": 22631
+  },
+  {
+    "path": "reference/README.md",
+    "bytes": 1072
+  },
+  {
+    "path": "reference/__init__.py",
+    "bytes": 0
+  },
+  {
+    "path": "reference/boundary.py",
+    "bytes": 2440
+  },
+  {
+    "path": "reference/config.example.yaml",
+    "bytes": 558
+  },
+  {
+    "path": "reference/demo.py",
+    "bytes": 1145
+  },
+  {
+    "path": "reference/vault.py",
+    "bytes": 6911
+  },
+  {
+    "path": "requirements.txt",
+    "bytes": 27
+  },
+  {
+    "path": "tests/test_boundary.py",
+    "bytes": 735
+  },
+  {
+    "path": "tests/test_vault.py",
+    "bytes": 833
+  }
+]
