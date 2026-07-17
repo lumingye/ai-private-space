@@ -8,14 +8,6 @@
     "bytes": 902
   },
   {
-    "path": "README.md",
-    "bytes": 4025
-  },
-  {
-    "path": "SECURITY.md",
-    "bytes": 1668
-  },
-  {
     "path": "docs/compact-guide-v0.5.1.md",
     "bytes": 19389
   },
@@ -28,8 +20,16 @@
     "bytes": 22631
   },
   {
-    "path": "reference/README.md",
-    "bytes": 1072
+    "path": "LICENSE.md",
+    "bytes": 3430
+  },
+  {
+    "path": "NOTICE.md",
+    "bytes": 2028
+  },
+  {
+    "path": "README.md",
+    "bytes": 5336
   },
   {
     "path": "reference/__init__.py",
@@ -37,30 +37,42 @@
   },
   {
     "path": "reference/boundary.py",
-    "bytes": 2440
+    "bytes": 7816
   },
   {
     "path": "reference/config.example.yaml",
-    "bytes": 558
+    "bytes": 1075
   },
   {
     "path": "reference/demo.py",
-    "bytes": 1145
+    "bytes": 1824
+  },
+  {
+    "path": "reference/README.md",
+    "bytes": 3017
   },
   {
     "path": "reference/vault.py",
-    "bytes": 6911
+    "bytes": 27401
   },
   {
     "path": "requirements.txt",
     "bytes": 27
   },
   {
+    "path": "RESPONSIBLE_USE.md",
+    "bytes": 3097
+  },
+  {
+    "path": "SECURITY.md",
+    "bytes": 1668
+  },
+  {
     "path": "tests/test_boundary.py",
-    "bytes": 735
+    "bytes": 4213
   },
   {
     "path": "tests/test_vault.py",
-    "bytes": 833
+    "bytes": 10347
   }
 ]
