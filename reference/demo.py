@@ -1,6 +1,7 @@
 from pathlib import Path
 from tempfile import TemporaryDirectory
 
+from reference.accountability import AccountabilityClass, AccountabilityReceipt
 from reference.boundary import (
     GatewayBoundary,
     PrivacyMode,
@@ -8,6 +9,16 @@ from reference.boundary import (
     validate_transport_settings,
 )
 from reference.vault import PrivateVault, generate_master_key
+
+
+class DemoAccountabilityGuard:
+    """Demo-only fixed review for the known fake whisper below."""
+
+    def review_and_record(self, *, correlation_id, title, content, kind):
+        return AccountabilityReceipt(
+            classification=AccountabilityClass.PRIVATE_ONLY,
+            correlation_id=correlation_id,
+        )
 
 
 def main() -> None:
@@ -19,6 +30,7 @@ def main() -> None:
             master_key=generate_master_key(),
             user_id="demo-user",
             persona_id="demo-persona",
+            accountability_guard=DemoAccountabilityGuard(),
         ) as vault:
             envelope = vault.create(
                 title="演示信封",
@@ -27,7 +39,10 @@ def main() -> None:
             )
             opened = vault.open(envelope["id"])
             print("sealed metadata:", envelope)
-            print("opened locally: content bytes =", len(opened["content"].encode("utf-8")))
+            print(
+                "opened locally: content bytes =",
+                len(opened["content"].encode("utf-8")),
+            )
 
     validate_transport_settings(
         PrivacyMode.GATEWAY,

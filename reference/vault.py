@@ -23,6 +23,16 @@ from cryptography.exceptions import InvalidTag
 from cryptography.hazmat.primitives.ciphers.aead import AESGCM
 from cryptography.hazmat.primitives.kdf.scrypt import Scrypt
 
+from reference.accountability import (
+    AccountabilityConfigurationError,
+    AccountabilityError,
+    AccountabilityGuard,
+    AccountabilityReceipt,
+    AccountabilityReviewError,
+    receipt_payload,
+    validate_receipt,
+)
+
 SCHEMA = "ai-private-space-v1"
 KEY_CHECK_PLAINTEXT = b"ai-private-space-key-check-v1"
 KINDS = frozenset({"secret", "letter", "reflection", "unfinished", "whisper"})
@@ -145,10 +155,12 @@ class PrivateVault(AbstractContextManager["PrivateVault"]):
         master_key: str | bytes,
         user_id: str,
         persona_id: str,
+        accountability_guard: AccountabilityGuard | None = None,
     ):
         self.path = Path(path)
         self.user_id = _validated_identifier(user_id, field="user_id")
         self.persona_id = _validated_identifier(persona_id, field="persona_id")
+        self.accountability_guard = accountability_guard
         self.conn: sqlite3.Connection | None = None
         self._key: bytes | None = None
         self._metadata_key: bytes | None = None
@@ -479,7 +491,71 @@ class PrivateVault(AbstractContextManager["PrivateVault"]):
             or not isinstance(data.get("content"), str)
         ):
             raise VaultIntegrityError("entry plaintext has an invalid structure")
+        accountability = data.get("accountability")
+        if accountability is None:
+            data["accountability"] = {
+                "version": 0,
+                "classification": "legacy_unreviewed",
+                "correlation_id": None,
+                "ordinary_record_ref": None,
+            }
+        elif not isinstance(accountability, dict):
+            raise VaultIntegrityError("entry accountability receipt is invalid")
+        else:
+            try:
+                correlation_id = accountability.get("correlation_id")
+                if not isinstance(correlation_id, str):
+                    raise AccountabilityReviewError(
+                        "stored accountability correlation id is invalid"
+                    )
+                receipt = AccountabilityReceipt(
+                    classification=accountability.get("classification"),
+                    correlation_id=correlation_id,
+                    ordinary_record_ref=accountability.get("ordinary_record_ref"),
+                )
+                validated = validate_receipt(
+                    receipt,
+                    expected_correlation_id=correlation_id,
+                )
+                if accountability.get("version") != 1:
+                    raise AccountabilityReviewError(
+                        "stored accountability receipt version is invalid"
+                    )
+                data["accountability"] = receipt_payload(validated)
+            except AccountabilityError as exc:
+                raise VaultIntegrityError(
+                    "entry accountability receipt is invalid"
+                ) from exc
         return data
+
+    def _review_accountability(
+        self,
+        *,
+        title: str,
+        content: str,
+        kind: str,
+    ) -> dict[str, str | int | None]:
+        guard = self.accountability_guard
+        if guard is None:
+            raise AccountabilityConfigurationError(
+                "private writes require a trusted accountability guard"
+            )
+        correlation_id = uuid.uuid4().hex
+        try:
+            receipt = guard.review_and_record(
+                correlation_id=correlation_id,
+                title=title,
+                content=content,
+                kind=kind,
+            )
+        except Exception as exc:
+            raise AccountabilityReviewError("accountability guard failed") from exc
+        return receipt_payload(
+            validate_receipt(
+                receipt,
+                expected_correlation_id=correlation_id,
+            )
+        )
 
     def _make_envelope(
         self,
@@ -534,12 +610,21 @@ class PrivateVault(AbstractContextManager["PrivateVault"]):
         elif review_at is not None:
             raise ValueError("review_at is only valid for date reminders")
 
+        accountability = self._review_accountability(
+            title=title,
+            content=content,
+            kind=kind,
+        )
         token = uuid.uuid4().hex
         nonce = os.urandom(12)
         now = now_iso()
         reminder_state = "inactive" if reminder_mode == "never" else "pending"
         plaintext = json.dumps(
-            {"title": title, "content": content},
+            {
+                "title": title,
+                "content": content,
+                "accountability": accountability,
+            },
             ensure_ascii=False,
             separators=(",", ":"),
         ).encode("utf-8")

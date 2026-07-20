@@ -9,6 +9,13 @@ from pathlib import Path
 import pytest
 from cryptography.hazmat.primitives.ciphers.aead import AESGCM
 
+from reference.accountability import (
+    AccountabilityClass,
+    AccountabilityConfigurationError,
+    AccountabilityReceipt,
+    AccountabilityReviewError,
+    ProhibitedPrivateContentError,
+)
 from reference.vault import (
     MAX_CONTENT_BYTES,
     SCHEMA,
@@ -22,10 +29,55 @@ from reference.vault import (
 )
 
 
+class _ReceiptGuard:
+    def __init__(
+        self,
+        classification=AccountabilityClass.PRIVATE_ONLY,
+        ordinary_record_ref=None,
+        *,
+        mismatch=False,
+        failure=None,
+    ):
+        self.classification = classification
+        self.ordinary_record_ref = ordinary_record_ref
+        self.mismatch = mismatch
+        self.failure = failure
+        self.calls = []
+
+    def review_and_record(self, *, correlation_id, title, content, kind):
+        self.calls.append(
+            {
+                "correlation_id": correlation_id,
+                "title": title,
+                "content": content,
+                "kind": kind,
+            }
+        )
+        if self.failure is not None:
+            raise self.failure
+        return AccountabilityReceipt(
+            classification=self.classification,
+            correlation_id="0" * 32 if self.mismatch else correlation_id,
+            ordinary_record_ref=self.ordinary_record_ref,
+        )
+
+
+def _vault(path, *, master_key, user_id, persona_id, accountability_guard=None):
+    if accountability_guard is None:
+        accountability_guard = _ReceiptGuard()
+    return PrivateVault(
+        path,
+        master_key=master_key,
+        user_id=user_id,
+        persona_id=persona_id,
+        accountability_guard=accountability_guard,
+    )
+
+
 def test_vault_roundtrip_uses_opaque_minimal_envelope(tmp_path: Path):
     key = generate_master_key()
     path = tmp_path / "vault.sqlite"
-    with PrivateVault(path, master_key=key, user_id="u", persona_id="p") as vault:
+    with _vault(path, master_key=key, user_id="u", persona_id="p") as vault:
         envelope = vault.create(title="t", content="c", kind="whisper")
         assert set(envelope) == {"id", "sealed"}
         assert len(envelope["id"]) == 32
@@ -34,16 +86,117 @@ def test_vault_roundtrip_uses_opaque_minimal_envelope(tmp_path: Path):
         assert opened["title"] == "t"
         assert opened["content"] == "c"
         assert opened["kind"] == "whisper"
+        assert opened["accountability"]["classification"] == "private_only"
+        assert opened["accountability"]["ordinary_record_ref"] is None
+
+
+def test_missing_accountability_guard_refuses_new_writes(tmp_path: Path):
+    key = generate_master_key()
+    path = tmp_path / "vault.sqlite"
+    with PrivateVault(
+        path,
+        master_key=key,
+        user_id="u",
+        persona_id="p",
+    ) as vault:
+        with pytest.raises(AccountabilityConfigurationError):
+            vault.create(title="t", content="c")
+    with sqlite3.connect(path) as connection:
+        assert connection.execute("SELECT COUNT(*) FROM private_entries").fetchone()[0] == 0
+
+
+def test_accountable_write_requires_durable_ordinary_record(tmp_path: Path):
+    key = generate_master_key()
+    path = tmp_path / "vault.sqlite"
+    guard = _ReceiptGuard(AccountabilityClass.TASK)
+    with _vault(
+        path,
+        master_key=key,
+        user_id="u",
+        persona_id="p",
+        accountability_guard=guard,
+    ) as vault:
+        with pytest.raises(AccountabilityReviewError):
+            vault.create(title="task", content="do the thing")
+    with sqlite3.connect(path) as connection:
+        assert connection.execute("SELECT COUNT(*) FROM private_entries").fetchone()[0] == 0
+
+
+def test_accountable_receipt_is_sealed_without_leaking_from_envelope(tmp_path: Path):
+    key = generate_master_key()
+    path = tmp_path / "vault.sqlite"
+    guard = _ReceiptGuard(
+        AccountabilityClass.TASK,
+        "ordinary://tasks/task-123",
+    )
+    with _vault(
+        path,
+        master_key=key,
+        user_id="u",
+        persona_id="p",
+        accountability_guard=guard,
+    ) as vault:
+        envelope = vault.create(title="task", content="do the thing")
+        assert set(envelope) == {"id", "sealed"}
+        opened = vault.open(envelope["id"])
+        assert opened["accountability"]["classification"] == "task"
+        assert (
+            opened["accountability"]["ordinary_record_ref"]
+            == "ordinary://tasks/task-123"
+        )
+        assert guard.calls[0]["content"] == "do the thing"
+    assert b"ordinary://tasks/task-123" not in path.read_bytes()
+
+
+def test_prohibited_content_class_is_not_sealed(tmp_path: Path):
+    key = generate_master_key()
+    path = tmp_path / "vault.sqlite"
+    guard = _ReceiptGuard(AccountabilityClass.CREDENTIAL)
+    with _vault(
+        path,
+        master_key=key,
+        user_id="u",
+        persona_id="p",
+        accountability_guard=guard,
+    ) as vault:
+        with pytest.raises(ProhibitedPrivateContentError):
+            vault.create(title="credential", content="not a real credential")
+    with sqlite3.connect(path) as connection:
+        assert connection.execute("SELECT COUNT(*) FROM private_entries").fetchone()[0] == 0
+
+
+@pytest.mark.parametrize(
+    "guard",
+    [
+        _ReceiptGuard(mismatch=True),
+        _ReceiptGuard(failure=RuntimeError("MARKER must not escape")),
+    ],
+)
+def test_accountability_guard_failure_is_fail_closed(tmp_path: Path, guard):
+    key = generate_master_key()
+    path = tmp_path / "vault.sqlite"
+    with _vault(
+        path,
+        master_key=key,
+        user_id="u",
+        persona_id="p",
+        accountability_guard=guard,
+    ) as vault:
+        with pytest.raises(AccountabilityReviewError) as exc_info:
+            vault.create(title="t", content="c")
+        assert "MARKER" not in str(exc_info.value)
+    with sqlite3.connect(path) as connection:
+        assert connection.execute("SELECT COUNT(*) FROM private_entries").fetchone()[0] == 0
 
 
 def test_identity_is_bound_and_failed_construction_closes_cleanly(tmp_path: Path):
     key = generate_master_key()
     path = tmp_path / "vault.sqlite"
-    with PrivateVault(path, master_key=key, user_id="u", persona_id="p"):
+    with _vault(path, master_key=key, user_id="u", persona_id="p"):
         pass
     with pytest.raises(ValueError):
-        PrivateVault(path, master_key=key, user_id="u", persona_id="other")
-    with PrivateVault(path, master_key=key, user_id="u", persona_id="p"):
+        _vault(path, master_key=key, user_id="u", persona_id="other")
+    with _vault(path, master_key=key, user_id="u", persona_id="p"):
         pass
 
 
@@ -51,11 +204,11 @@ def test_wrong_key_is_rejected_before_any_new_entry_can_be_written(tmp_path: Pat
     key_one = generate_master_key()
     key_two = generate_master_key()
     path = tmp_path / "vault.sqlite"
-    with PrivateVault(path, master_key=key_one, user_id="u", persona_id="p") as vault:
+    with _vault(path, master_key=key_one, user_id="u", persona_id="p") as vault:
         vault.create(title="one", content="first")
 
     with pytest.raises(VaultKeyError):
-        PrivateVault(path, master_key=key_two, user_id="u", persona_id="p")
+        _vault(path, master_key=key_two, user_id="u", persona_id="p")
 
     with sqlite3.connect(path) as connection:
         count = connection.execute("SELECT COUNT(*) FROM private_entries").fetchone()[0]
@@ -66,16 +219,16 @@ def test_wrong_key_is_rejected_even_when_vault_has_no_entries(tmp_path: Path):
     key_one = generate_master_key()
     key_two = generate_master_key()
     path = tmp_path / "vault.sqlite"
-    with PrivateVault(path, master_key=key_one, user_id="u", persona_id="p"):
+    with _vault(path, master_key=key_one, user_id="u", persona_id="p"):
         pass
     with pytest.raises(VaultKeyError):
-        PrivateVault(path, master_key=key_two, user_id="u", persona_id="p")
+        _vault(path, master_key=key_two, user_id="u", persona_id="p")
 
 
 def test_metadata_tampering_is_detected_before_reminder_use(tmp_path: Path):
     key = generate_master_key()
     path = tmp_path / "vault.sqlite"
-    with PrivateVault(path, master_key=key, user_id="u", persona_id="p") as vault:
+    with _vault(path, master_key=key, user_id="u", persona_id="p") as vault:
         vault.create(
             title="dated",
             content="content",
@@ -87,7 +240,7 @@ def test_metadata_tampering_is_detected_before_reminder_use(tmp_path: Path):
             "UPDATE private_entries SET review_at='2000-01-01T00:00:00.000Z'"
         )
         connection.commit()
-    with PrivateVault(path, master_key=key, user_id="u", persona_id="p") as vault:
+    with _vault(path, master_key=key, user_id="u", persona_id="p") as vault:
         with pytest.raises(VaultIntegrityError):
             vault.list_due(instant="2026-01-01T00:00:00Z")
 
@@ -95,7 +248,7 @@ def test_metadata_tampering_is_detected_before_reminder_use(tmp_path: Path):
 def test_ciphertext_tampering_is_detected_on_open(tmp_path: Path):
     key = generate_master_key()
     path = tmp_path / "vault.sqlite"
-    with PrivateVault(path, master_key=key, user_id="u", persona_id="p") as vault:
+    with _vault(path, master_key=key, user_id="u", persona_id="p") as vault:
         entry_id = vault.create(title="t", content="c")["id"]
     with sqlite3.connect(path) as connection:
         ciphertext = bytearray(
@@ -110,7 +263,7 @@ def test_ciphertext_tampering_is_detected_on_open(tmp_path: Path):
             (bytes(ciphertext), entry_id),
         )
         connection.commit()
-    with PrivateVault(path, master_key=key, user_id="u", persona_id="p") as vault:
+    with _vault(path, master_key=key, user_id="u", persona_id="p") as vault:
         with pytest.raises(VaultIntegrityError):
             vault.open(entry_id)
 
@@ -118,7 +271,7 @@ def test_ciphertext_tampering_is_detected_on_open(tmp_path: Path):
 def test_date_reminder_is_normalized_and_requires_timezone(tmp_path: Path):
     key = generate_master_key()
     path = tmp_path / "vault.sqlite"
-    with PrivateVault(path, master_key=key, user_id="u", persona_id="p") as vault:
+    with _vault(path, master_key=key, user_id="u", persona_id="p") as vault:
         entry_id = vault.create(
             title="t",
             content="c",
@@ -138,7 +291,7 @@ def test_date_reminder_is_normalized_and_requires_timezone(tmp_path: Path):
 def test_due_claim_is_atomic_and_not_repeated(tmp_path: Path):
     key = generate_master_key()
     path = tmp_path / "vault.sqlite"
-    with PrivateVault(path, master_key=key, user_id="u", persona_id="p") as vault:
+    with _vault(path, master_key=key, user_id="u", persona_id="p") as vault:
         entry_id = vault.create(
             title="review",
             content="later",
@@ -152,7 +305,7 @@ def test_due_claim_is_atomic_and_not_repeated(tmp_path: Path):
 def test_snooze_and_dismiss_update_authenticated_metadata(tmp_path: Path):
     key = generate_master_key()
     path = tmp_path / "vault.sqlite"
-    with PrivateVault(path, master_key=key, user_id="u", persona_id="p") as vault:
+    with _vault(path, master_key=key, user_id="u", persona_id="p") as vault:
         entry_id = vault.create(
             title="review",
             content="later",
@@ -179,7 +332,7 @@ def test_master_key_decoding_is_strict():
 def test_size_and_list_limits_are_enforced(tmp_path: Path):
     key = generate_master_key()
     path = tmp_path / "vault.sqlite"
-    with PrivateVault(path, master_key=key, user_id="u", persona_id="p") as vault:
+    with _vault(path, master_key=key, user_id="u", persona_id="p") as vault:
         vault.create(title="t", content="c")
         assert vault.list_envelopes(limit=0) == []
         with pytest.raises(ValueError):
@@ -194,7 +347,7 @@ def test_existing_vault_directory_must_be_owner_only(tmp_path: Path):
     public_directory.mkdir()
     os.chmod(public_directory, 0o755)
     with pytest.raises(PermissionError):
-        PrivateVault(
+        _vault(
             public_directory / "vault.sqlite",
             master_key=generate_master_key(),
             user_id="u",
@@ -255,7 +408,7 @@ def test_legacy_vault_requires_key_proof_before_migration(tmp_path: Path):
     entry_id = _create_legacy_vault(path, key=correct_key)
 
     with pytest.raises(VaultKeyError):
-        PrivateVault(path, master_key=wrong_key, user_id="u", persona_id="p")
+        _vault(path, master_key=wrong_key, user_id="u", persona_id="p")
     with sqlite3.connect(path) as connection:
         assert (
             connection.execute(
@@ -264,13 +417,15 @@ def test_legacy_vault_requires_key_proof_before_migration(tmp_path: Path):
             is None
         )
 
-    with PrivateVault(
+    with _vault(
         path,
         master_key=correct_key,
         user_id="u",
         persona_id="p",
     ) as vault:
-        assert vault.open(entry_id)["title"] == "legacy"
+        opened = vault.open(entry_id)
+        assert opened["title"] == "legacy"
+        assert opened["accountability"]["classification"] == "legacy_unreviewed"
     with sqlite3.connect(path) as connection:
         assert (
             connection.execute(

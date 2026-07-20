@@ -34,6 +34,14 @@ A private space may hold secrets, but it must not become the only record of comm
 
 私人空间可以保存秘密，但不能成为承诺、错误、任务、重大决定、凭证、第三方隐私或关系边界的唯一记录。
 
+This boundary must not depend only on the current writer's self-classification. Every create or material update should pass through a trusted, server-side accountability guard that the writer cannot forge. Accountable content must first produce a durable reference in the ordinary task, memory, incident, relationship-boundary, or governance system. Review failure and uncertainty must fail closed. Deleting the private body must not delete the ordinary accountability record.
+
+这条边界不能只依赖本次写入者自觉分类。每次新建或实质更新都应经过写入者无法伪造的受信任服务端责任审查器；责任性内容必须先在普通任务、记忆、事故、关系边界或治理系统留下持久引用。审查失败与不确定情况应关闭失败，删除私人正文不得连带删除普通责任记录。
+
+Credentials, unauthorized third-party private data, and hidden reasoning remain prohibited; creating an external reference does not make them acceptable private-space content.
+
+凭证、未经允许的第三方隐私和隐藏推理仍属禁止内容，另建外部引用不会使其变成可接受的私人空间内容。
+
 ## Relationship to the licenses / 与许可证的关系
 
 This statement expresses the project’s safety and ethical expectations. It is not an additional restriction on the CC BY-NC-SA 4.0 license and does not modify the PolyForm Noncommercial License 1.0.0.
