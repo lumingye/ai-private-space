@@ -6,30 +6,31 @@
 
 > 私人空间可以保存秘密，但不能隐藏责任。
 
-承诺、错误、任务、关系边界、重大决定、安全事项、凭证和未经允许的第三方隐私，不应只存放在私人空间。
+承诺、错误、任务、关系边界、重大决定和安全事项，必须先在普通系统留下可追踪记录；凭证、未经允许的第三方隐私和隐藏推理不得存入。责任分类不能由本次写入者自行声明。
 
 ## 这个仓库包含什么
 
-- 一份自包含的 [v0.6 完整设计、威胁模型与实现指南](docs/complete-guide-v0.6.md)；
+- 一份自包含的 [v0.6.1 完整设计、威胁模型与实现指南](docs/complete-guide-v0.6.1.md)；
 - 一套框架无关的 Python 最小参考实现；
-- 33 项自动化测试，覆盖加密、身份绑定、提醒和 gateway 边界；
+- 39 项自动化测试，覆盖加密、身份绑定、责任锚点、提醒和 gateway 边界；
 - 安全披露、责任使用、项目来源与非商业许可说明。
 
 这里的代码是**可运行的架构参考**，不是已经接好账号、模型、前端和生产密钥系统的完整服务，也不能直接部署后就宣称可以承载真实秘密。
 
 ## 先读哪一份
 
-- **主文档与当前规范：** [`docs/complete-guide-v0.6.md`](docs/complete-guide-v0.6.md)
+- **主文档与当前规范：** [`docs/complete-guide-v0.6.1.md`](docs/complete-guide-v0.6.1.md)
 - **参考代码接入说明：** [`reference/README.md`](reference/README.md)
 - **安全与责任边界：** [`SECURITY.md`](SECURITY.md) · [`RESPONSIBLE_USE.md`](RESPONSIBLE_USE.md)
 
-v0.6 已合并并取代以下历史文档；旧文件继续保留，便于追溯设计演变：
+v0.6.1 已合并并取代以下历史文档；旧文件继续保留，便于追溯设计演变：
 
 - [`docs/full-proposal-v0.3.md`](docs/full-proposal-v0.3.md)：最初的完整提案；
 - [`docs/tool-trace-patch-v0.4.md`](docs/tool-trace-patch-v0.4.md)：工具轨迹与前端补丁；
-- [`docs/compact-guide-v0.5.1.md`](docs/compact-guide-v0.5.1.md)：旧简明综合版。
+- [`docs/compact-guide-v0.5.1.md`](docs/compact-guide-v0.5.1.md)：旧简明综合版；
+- [`docs/complete-guide-v0.6.md`](docs/complete-guide-v0.6.md)：加入参考实现安全修订的上一完整版本。
 
-若旧文档与 v0.6 有冲突，以 v0.6 为准。
+若旧文档与 v0.6.1 有冲突，以 v0.6.1 为准。
 
 ## 最重要的限制
 
@@ -56,6 +57,9 @@ v0.6 已合并并取代以下历史文档；旧文件继续保留，便于追溯
 - 写入前主密钥认证，避免错误密钥混写；
 - 提醒元数据完整性认证、严格 UTC 日期与原子领取；
 - 随机外部条目 ID、输入与列表限制；
+- 新写入必须经过受信任的责任审查器，未配置或异常时关闭失败；
+- 责任性内容必须先取得普通账本回执；禁止类内容直接拒绝；
+- 责任回执随正文加密，旧条目标记为 `legacy_unreviewed`；
 - 软隐私风险提示；
 - gateway 对私密和未分类工具事件关闭失败；
 - 公开工具显式允许列表，事件载荷不能自行降级；
@@ -68,6 +72,7 @@ v0.6 已合并并取代以下历史文档；旧文件继续保留，便于追溯
 - 每条内容独立 DEK、KMS/HSM、密钥轮换、备份与恢复；
 - 客户端持钥或端到端加密；
 - 提示注入防护、URL 限制和附件沙箱；
+- 独立语义审查器、追加式普通责任账本、回执验真与失败对账；
 - 容量、并发、监控、审计和真实部署安全测试。
 
 ## 快速运行
@@ -98,11 +103,13 @@ ai-private-space/
 ├─ requirements.txt
 ├─ docs/
 │  ├─ complete-guide-v0.6.md
+│  ├─ complete-guide-v0.6.1.md
 │  ├─ compact-guide-v0.5.1.md
 │  ├─ full-proposal-v0.3.md
 │  └─ tool-trace-patch-v0.4.md
 ├─ reference/
 │  ├─ README.md
+│  ├─ accountability.py
 │  ├─ config.example.yaml
 │  ├─ vault.py
 │  ├─ boundary.py
@@ -114,7 +121,7 @@ ai-private-space/
 
 ## 项目状态
 
-v0.6 是当前主设计文档；参考代码用于演示最容易被遗漏的安全边界，并已通过 33 项自动化测试。
+v0.6.1 是当前主设计文档；参考代码用于演示最容易被遗漏的安全边界，并已通过 39 项自动化测试。
 
 项目仍处于“设计规范 + 参考实现”阶段，而非生产服务。实际隐私强度最终取决于部署者的认证、gateway、前端传输、日志、密钥持有者、模型供应商、备份删除和运行环境。
 

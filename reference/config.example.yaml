@@ -28,3 +28,9 @@ storage:
   database_path: ./private-data/private.sqlite
   master_key_env: PRIVATE_SPACE_MASTER_KEY
 
+accountability:
+  # Every new write must pass through a trusted server-side guard. The writer
+  # must not be allowed to submit its own classification or ledger receipt.
+  require_guard_for_writes: true
+  fail_closed_on_review_error: true
+  ordinary_record_system: REQUIRED_EXTERNAL_APPEND_ONLY_LEDGER
