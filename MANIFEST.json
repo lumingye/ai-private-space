@@ -5,7 +5,7 @@
   },
   {
     "path": "CHANGELOG.md",
-    "bytes": 2652
+    "bytes": 2809
   },
   {
     "path": "docs/compact-guide-v0.5.1.md",
@@ -17,7 +17,7 @@
   },
   {
     "path": "docs/complete-guide-v0.6.1.md",
-    "bytes": 35210
+    "bytes": 35751
   },
   {
     "path": "docs/full-proposal-v0.3.md",
@@ -33,11 +33,11 @@
   },
   {
     "path": "NOTICE.md",
-    "bytes": 2028
+    "bytes": 4549
   },
   {
     "path": "README.md",
-    "bytes": 7229
+    "bytes": 8605
   },
   {
     "path": "reference/__init__.py",

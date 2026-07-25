@@ -719,4 +719,4 @@ Root / KMS key
 
 私人空间的意义，不是证明 AI 必须拥有秘密，也不是要求所有人接受同一种关系理解。它只提供一种可实现、可测试的选择：在“记住用户”之外，也留一处由内容所有者决定如何保存、如何修改、何时复看、是否分享或永不分享的空间。
 
-本项目最初受到网络社区中“给 AI 一个自己的私密空间”这一公开想法启发；具体边界、架构、文档、参考代码与测试为后续独立完成。抽象想法不主张独占。文档与代码的具体许可范围以仓库 `LICENSE.md` 和 `NOTICE.md` 为准。
+本项目不主张“给 AI 一个私人空间”这一抽象概念的原创性。已知相近公开实践包括 [Yinglianchun/Ombre-Brain 的 Darkroom](https://github.com/Yinglianchun/Ombre-Brain/blob/main/darkroom.py)、[letta-ai/characterai-memory](https://github.com/letta-ai/characterai-memory)、[clawdbrunner/openclaw-graphiti-memory](https://github.com/clawdbrunner/openclaw-graphiti-memory) 与 [sqliteai/sqlite-memory](https://github.com/sqliteai/sqlite-memory)。其中 Darkroom 更接近“私人空间”的产品隐喻，其余项目分别体现角色专属记忆、私有 / 共享分层与选择性同步。此处列为 related work，不表示本项目直接采用其代码、文档或具体规则，也不构成完整的先例清单。文档与代码的具体许可范围以仓库 `LICENSE.md` 和 `NOTICE.md` 为准。

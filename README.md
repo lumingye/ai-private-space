@@ -127,7 +127,16 @@ v0.6.1 是当前主设计文档；参考代码用于演示最容易被遗漏的�
 
 ## 项目起源
 
-本项目最初受到网络社区中“可以给 AI 一个自己的私密空间”这一公开想法启发。该想法未提供代码或具体实现；本项目的边界设计、架构、文档、参考代码与测试均为后续独立完成。抽象想法不属于本项目主张独占的范围，详见 [`NOTICE.md`](NOTICE.md)。
+本项目不主张“给 AI 一个私人空间”这一抽象概念的原创性。相近构想可能在不同社区及长期记忆 / Agent 项目中独立出现；本仓库的具体定位、边界设计、文档、参考实现与测试，均围绕自身使用需求展开。来源范围与许可边界详见 [`NOTICE.md`](NOTICE.md)。
+
+## Related work / 相近实践
+
+- [Yinglianchun/Ombre-Brain — Darkroom](https://github.com/Yinglianchun/Ombre-Brain/blob/main/darkroom.py)：记忆系统中的 AI 私密反思空间，用于保存未完成的内在反思，并在显式查看前只暴露有限门口状态；这是当前最接近本项目产品隐喻的公开实践。
+- [letta-ai/characterai-memory](https://github.com/letta-ai/characterai-memory)：将共享的用户记忆与各角色独立的 persona / memory 分开，体现“角色专属状态”与“共同可见状态”的边界。
+- [clawdbrunner/openclaw-graphiti-memory](https://github.com/clawdbrunner/openclaw-graphiti-memory)：采用每个 Agent 的私有文件、共享文件与共享图谱三层结构，展示多 Agent 场景中的私有 / 共享记忆分层。
+- [sqliteai/sqlite-memory](https://github.com/sqliteai/sqlite-memory)：通过按 context 选择性同步，使 Agent 可以把私有记忆与共享记忆分开，提供另一种可见性与共享边界实现。
+
+这些项目与本项目的接近程度并不相同：Darkroom 更接近“私人空间”的产品概念，其余项目主要提供角色隔离、私有 / 共享分层或选择性披露方面的相邻架构。列入此处仅用于理解设计空间，不表示本项目直接采用了其代码、文档或具体规则，也不构成完整的先例清单。
 
 ## 许可
 
